@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@1.5.6/css/pico.min.css">
+    <style>
+        main {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            padding: 2rem;
+        }
+        .settings, #qrcode {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .settings {
+            margin-right: 2rem;
+        }
+        .advanced-options {
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <div class="settings">
+            <p>Enter a URL to generate a QR code:</p>
+
+            <form oninput="livePreview()">
+                <input type="text" id="url" placeholder="Enter a URL" required>
+                <label for="foregroundColor">Foreground Color:</label>
+                <input type="color" id="foregroundColor" value="#000000">
+                <label for="backgroundColor">Background Color:</label>
+                <input type="color" id="backgroundColor" value="#ffffff">
+
+                <div class="advanced-options">
+                    <label for="qrSize">QR Code Size:</label>
+                    <input type="range" id="qrSize" min="100" max="400" value="200">
+                    <span id="sizeDisplay">200px</span>
+                    
+                    <label for="gradient">Use Gradient:</label>
+                    <input type="checkbox" id="gradient" style="display: inline;"/>
+
+                    <div id="gradientColors" style="display: none;">
+                        <label for="gradientStart">Gradient Start Color:</label>
+                        <input type="color" id="gradientStart" value="#ff0000">
+                        <label for="gradientEnd">Gradient End Color:</label>
+                        <input type="color" id="gradientEnd" value="#0000ff">
+                    </div>
+                </div>
+            </form>
+            <button onclick="downloadQRCode()">Download QR Code</button>
+        </div>
+
+        <div id="qrcode"></div>
+    </main>
+
+    <script>
+        function generateGradient(ctx, width, height, startColor, endColor) {
+            const gradient = ctx.createLinearGradient(0, 0, width, height);
+            gradient.addColorStop(0, startColor);
+            gradient.addColorStop(1, endColor);
+            return gradient;
+        }
+
+        function livePreview() {
+            const qrcodeContainer = document.getElementById('qrcode');
+            qrcodeContainer.innerHTML = ''; // Clear previous QR code
+
+            const urlInput = document.getElementById('url').value;
+            const foregroundColor = document.getElementById('foregroundColor').value;
+            const backgroundColor = document.getElementById('backgroundColor').value;
+            const qrSize = document.getElementById('qrSize').value;
+            const useGradient = document.getElementById('gradient').checked;
+
+            document.getElementById('sizeDisplay').innerText = `${qrSize}px`;
+
+            if (urlInput) {
+                const qrCanvas = document.createElement('canvas');
+                qrCanvas.width = qrCanvas.height = parseInt(qrSize);
+                const qrCtx = qrCanvas.getContext('2d');
+
+                const qrCode = new QRCode(qrcodeContainer, {
+                    text: urlInput,
+                    width: parseInt(qrSize),
+                    height: parseInt(qrSize),
+                    colorDark: useGradient
+                        ? generateGradient(qrCtx, qrSize, qrSize, document.getElementById('gradientStart').value, document.getElementById('gradientEnd').value)
+                        : foregroundColor,
+                    colorLight: backgroundColor,
+                });
+            }
+        }
+
+        function downloadQRCode() {
+            const qrCanvas = document.querySelector('#qrcode canvas');
+            if (qrCanvas) {
+                const link = document.createElement('a');
+                link.href = qrCanvas.toDataURL('image/png');
+                link.download = 'qrcode.png';
+                link.click();
+            }
+        }
+
+        document.getElementById('gradient').addEventListener('change', (event) => {
+            document.getElementById('gradientColors').style.display = event.target.checked ? 'block' : 'none';
+            livePreview();
+        });
+
+        document.addEventListener('DOMContentLoaded', livePreview);
+    </script>
+</body>
+</html>
